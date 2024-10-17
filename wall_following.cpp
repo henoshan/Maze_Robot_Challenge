@@ -1,4 +1,4 @@
-#Lets start guys
+#Lets start Guys
 #include <Arduino.h>
 
 // Define pins for ultrasonic sensors
@@ -23,12 +23,13 @@ int forwardLeftSpeed = 80; // for moving forward--> adjusted
 int forwardRightSpeed = 86;
 int turnLeftSpeed = 80;  // for turning right,Left and around --> constant
 int turnRightSpeed = 86;
-int offset = 25;
-int offsetMin = 10;
+int offset = 30;
+int offsetMin = 15;
 const int moveForwardDelay = 200;
 // Function Prototypes
 long readUltrasonic(int trigPin, int echoPin);
 void moveForward();
+void startRobot();
 void stopRobot();
 void turnLeft();
 void turnRight();
@@ -74,7 +75,7 @@ void loop() {
   //   delay(5000); // Stop at the end point
   // }
 
-  // Dead-end check
+
   if (frontDist < offsetMin && leftDist < offsetMin && rightDist < offsetMin) {
     stopRobot();
     turnAround();
@@ -91,21 +92,29 @@ void loop() {
       // Move forward 
       moveForward();
   }
-  // delay(100); // Small delay for testing
+  // moveForward();
+  // delay(4000); // Small delay for testing
 }
 
                             // Functions //
 // Ultrasonic sensor function
 long readUltrasonic(int trigPin, int echoPin) {
   digitalWrite(trigPin, LOW);
-  delayMicroseconds(10); // check and increase for better iterative reading
+  delayMicroseconds(8); // check and increase for better iterative reading
   digitalWrite(trigPin, HIGH);
-  delayMicroseconds(50);
+  delayMicroseconds(40);
   digitalWrite(trigPin, LOW);
   long duration = pulseIn(echoPin, HIGH);
-  return duration * 0.0346 / 2; // Distance in cm ( increased precision may require more time--> more delay in getting the readings)
+  return duration * 0.034 / 2; // Distance in cm ( increased precision may require more time--> more delay in getting the readings)
 }
-
+void startRobot(){
+  analogWrite(enableLeft, forwardLeftSpeed); 
+  analogWrite(enableRight, forwardRightSpeed); 
+  digitalWrite(leftForward, HIGH);
+  digitalWrite(leftBackward, LOW);
+  digitalWrite(rightForward, HIGH);
+  digitalWrite(rightBackward, LOW);
+}
 void stopRobot() {
   analogWrite(enableLeft, 0);  
   analogWrite(enableRight, 0);  
@@ -113,7 +122,7 @@ void stopRobot() {
   digitalWrite(leftBackward, LOW);
   digitalWrite(rightForward, LOW);
   digitalWrite(rightBackward, LOW);
-  delay(100); // check and adjust
+  delay(200); // check and adjust
 }
 void moveForward() {
   int lSpeed = forwardLeftSpeed;
@@ -135,69 +144,63 @@ void moveForward() {
     } else {
       adjustLeft(lSpeed,rSpeed);        // Too close to the right wall: adjust to the left
     }
-    // if (readUltrasonic(trigLeft, echoLeft) < 8) {
-    //   adjustRight();       // Too close to the left wall: adjust to the right
-    // } else if (readUltrasonic(trigRight, echoRight) < 8) {
-    //   adjustLeft();
+    // if (leftDist < 7) {
+    //   adjustRight(lSpeed,rSpeed);       // Too close to the left wall: adjust to the right
+    // } else if (rightDist < 7) {
+    //   adjustLeft(lSpeed,rSpeed);
     // }       // Too close to the right wall: adjust to the left           
-    delay(20);
+    // delay(5);
   }
   //check where the robot stops when moving forward
-  // delay(moveForwardDelay); // move forward a bit more to reach the center
+  // delay(50);
+  delay(moveForwardDelay); // move forward a bit more to reach the center
   stopRobot();
-  delay(50);
 }
 
 void turnLeft() {
-  analogWrite(enableLeft, turnLeftSpeed);  
-  analogWrite(enableRight, turnRightSpeed);  
+  startRobot();
+  delay(400); 
   // Rotate the robot left
   digitalWrite(leftForward, LOW);
   digitalWrite(leftBackward, HIGH);
   digitalWrite(rightForward, HIGH);
   digitalWrite(rightBackward, LOW);
 
+  analogWrite(enableLeft, turnLeftSpeed);  
+  analogWrite(enableRight, turnRightSpeed); 
+
   // Keep turning left until there's no obstacle ahead
-  while (!(readUltrasonic(trigFront, echoFront) > offset)) { // will not work if no block infront
-    delay(20);
+  while (!(readUltrasonic(trigLeft, echoLeft) < offset)) { // will not work if no block infront
+    // delay(10);
   }
-  delay(100); //turn to 90 degree// check and change
+  delay(200); //turn to 90 degree// check and change
 
   stopRobot(); // stop for a few ms
-
-  analogWrite(enableLeft, forwardLeftSpeed); 
-  analogWrite(enableRight, forwardRightSpeed); 
-  digitalWrite(leftForward, HIGH);
-  digitalWrite(leftBackward, LOW);
-  digitalWrite(rightForward, HIGH);
-  digitalWrite(rightBackward, LOW);
+  startRobot();
   delay(moveForwardDelay); // move forward a bit after turning
   stopRobot();
 }
 
-void turnRight() {   
-  analogWrite(enableLeft, turnLeftSpeed);  
-  analogWrite(enableRight, turnRightSpeed);  
+void turnRight() {  
+  startRobot();
+  delay(400);   
   // Rotate the robot right
   digitalWrite(leftForward, HIGH);
   digitalWrite(leftBackward, LOW);
   digitalWrite(rightForward, LOW);
   digitalWrite(rightBackward, HIGH);
+
+  analogWrite(enableLeft, turnLeftSpeed);  
+  analogWrite(enableRight, turnRightSpeed); 
   
   //Keep turning right until there's no obstacle ahead
-  while (!(readUltrasonic(trigFront, echoFront) > offset)) {// will not work if no block infront
-    delay(20);
+  while (!(readUltrasonic(trigRight, echoRight) < offset)) {
+    // delay(10);
   }
   delay(100);// check and change //turn to 90 degree
   
   stopRobot();
-
-  analogWrite(enableLeft, forwardLeftSpeed); 
-  analogWrite(enableRight, forwardRightSpeed); 
-  digitalWrite(leftForward, HIGH);
-  digitalWrite(leftBackward, LOW);
-  digitalWrite(rightForward, HIGH);
-  digitalWrite(rightBackward, LOW);
+  startRobot();
   delay(moveForwardDelay); // move forward a bit after turning
 
   stopRobot();
@@ -214,7 +217,7 @@ void turnAround() {
 
   // Keep turning around until the front sensor detects a clear path
   while (!((readUltrasonic(trigFront, echoFront) > offset) && (readUltrasonic(trigLeft, echoLeft) < offsetMin) && (readUltrasonic(trigRight, echoRight) < offsetMin))) {
-    delay(20);
+    // delay(10);
   }
 
   stopRobot();
@@ -231,4 +234,3 @@ void adjustRight(int &lSpeed, int &rSpeed) {
   analogWrite(enableLeft, lSpeed);  
   analogWrite(enableRight, rSpeed); 
 }
-
