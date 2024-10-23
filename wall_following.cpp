@@ -42,7 +42,7 @@ void adjustRight(int &lSpeed, int &rSpeed);
 void moveBackward(int d);
 // void followPath();
 // void backtrack();
-void addToPath(char movement);
+void addToPath(int movement);
 long readUltrasonicFiltered(int trigPin, int echoPin); 
 
 void setup() {
@@ -81,18 +81,18 @@ void loop() {
   //   delay(5000); // Stop at the end point
   // }
 
-  if(leftDist > offsetTurn || rightDist > offsetTurn){
+  if(leftDist > offsetTurn || rightDist > offsetTurn){ // check for opening in left and right
     if((rightDist > offsetTurn) && (leftDist > offsetTurn)){
       if(readUltrasonic(trigFront, echoFront) < offsetMin ){
           moveBackward(150);
       }
-      if(R%4==0){
+      if(R%4==0){ // chose left every 4 times
         turnLeft();
       }else{
         turnRight();
       }
     }else if(rightDist > offsetTurn && leftDist < offsetTurn){
-      if(readUltrasonic(trigFront, echoFront) < offsetMin ){
+      if(readUltrasonic(trigFront, echoFront) < offsetMin ){ // move back a bit if front distance is less
         moveBackward(150);
       }
       turnRight();
@@ -103,17 +103,17 @@ void loop() {
       turnLeft();   
     }
   }else{
-    frontDist = readUltrasonic(trigFront, echoFront);
+    frontDist = readUltrasonic(trigFront, echoFront);  // dead end
     if(frontDist < offset || frontDist > 300){   //&&(rightDist < offset)&&(leftDist < offset)
       if(readUltrasonic(trigFront, echoFront) < offsetMin ){
         moveBackward(150);
       }
       turnAround();
-    }else moveForward();
+    }else moveForward(); // opening infront
   }
   // move backward if too clode to wall
   frontDist = readUltrasonic(trigFront, echoFront);
-  if(frontDist < offsetMin || frontDist > 300){
+  if(frontDist < offsetMin || frontDist > 300){   // move back a bit if front distance is low
     moveBackward(100);
   }
 }
@@ -130,11 +130,11 @@ long readUltrasonic(int trigPin, int echoPin) {
   if(duration == 0){
     duration=20000;
   }
-  delay(10);
+  delay(10); // delay for repetitive readings
   return duration * 0.034 / 2; // Distance in cm ( increased precision may require more time--> more delay in getting the readings)
 }
 
-void startRobot(int Sl,int Sr) {
+void startRobot(int Sl,int Sr) {  // start robot for forward movement
   analogWrite(enableLeft, forwardLeftSpeed + Sl);
   analogWrite(enableRight, forwardRightSpeed + Sr);
   digitalWrite(leftForward, HIGH);
@@ -143,7 +143,7 @@ void startRobot(int Sl,int Sr) {
   digitalWrite(rightBackward, LOW);
 }
 
-void moveBackward(int d) {
+void moveBackward(int d) { // move backward
   analogWrite(enableLeft, forwardLeftSpeed);
   analogWrite(enableRight, forwardRightSpeed);
   digitalWrite(leftForward, LOW);
@@ -154,7 +154,7 @@ void moveBackward(int d) {
   stopRobot();
 }
 
-void stopRobot(int d) {
+void stopRobot(int d) { // stop robot after a delay
   delay(d);
   analogWrite(enableLeft, 0);
   analogWrite(enableRight, 0);
@@ -165,7 +165,7 @@ void stopRobot(int d) {
   delay(300); // check and adjust
 }
 
-void moveForward() {
+void moveForward() {  // move forward while adjust speed
   int lSpeed = forwardLeftSpeed;
   int rSpeed = forwardRightSpeed;
   lSpeed = constrain(lSpeed, 70, 100);
@@ -182,7 +182,7 @@ void moveForward() {
   long leftDist = readUltrasonic(trigLeft, echoLeft);
   long rightDist = readUltrasonic(trigRight, echoRight);
   int initialDiff = abs(leftDist-rightDist);
-  while (!((frontDist < offset || frontDist > 300) || leftDist > offsetTurn || rightDist > offsetTurn)) {
+  while (!((frontDist < offset || frontDist > 300) || leftDist > offsetTurn || rightDist > offsetTurn)) { // stop moving forward if there is a obstacle ahead or opening
     if(initialDiff != abs(leftDist-rightDist)){
       if (leftDist > rightDist) {
         adjustRight(lSpeed, rSpeed); // Too close to the left wall: adjust to the right
@@ -197,7 +197,7 @@ void moveForward() {
     rightDist = readUltrasonic(trigRight, echoRight);
   }
   stopRobot(10);
-  startRobot(0,0);
+  startRobot(0,0);  //  move to the center of the box
   long startf =millis();
   while((readUltrasonic(trigFront, echoFront) > offsetMin-3) && ((millis()-startf) < 300)){ // move forward a bit more // check front >300
     delay(10);
@@ -219,7 +219,7 @@ void turnLeft() {
   // analogWrite(enableLeft, turnLeftSpeed);
   analogWrite(enableRight, turnRightSpeed);
   long startl =millis();
-  while ((readUltrasonic(trigLeft, echoLeft) > offsetMin) && ((millis()-startl) < 530)) {
+  while ((readUltrasonic(trigLeft, echoLeft) > offsetMin) && ((millis()-startl) < 530)) { // turn for a time or until obstacle detected
     delay(20);
   }
   stopRobot();
@@ -228,7 +228,7 @@ void turnLeft() {
 
   startRobot(0,4);
   startl =millis();
-  while((readUltrasonic(trigFront, echoFront) > offset) && ((millis()-startl) < 260)){ // move forward a bit more
+  while((readUltrasonic(trigFront, echoFront) > offset) && ((millis()-startl) < 260)){ // move forward a bit more to reach center
     delay(10);
   }
   startl=0;
@@ -246,7 +246,7 @@ void turnRight() {
   analogWrite(enableLeft, turnLeftSpeed);
   // analogWrite(enableRight, turnRightSpeed);
   long startr =millis();
-  while ((readUltrasonic(trigRight, echoRight) > offsetMin) && ((millis()-startr) < 530)) {
+  while ((readUltrasonic(trigRight, echoRight) > offsetMin) && ((millis()-startr) < 530)) { // turn for a time or until obstacle detected
     delay(20);
   }
   stopRobot();
@@ -254,7 +254,7 @@ void turnRight() {
   R++;
   startRobot(4,0);
   startr =millis();
-  while((readUltrasonic(trigFront, echoFront) > offset) && ((millis()-startr) < 260)){ // move forward a bit more
+  while((readUltrasonic(trigFront, echoFront) > offset) && ((millis()-startr) < 260)){ // move forward a bit more to reach center
     delay(10);
   }
   startr=0;
@@ -273,7 +273,7 @@ void turnAround() {
   long lD = readUltrasonic(trigLeft, echoLeft);
   long rD = readUltrasonic(trigRight, echoRight);
   int startT= millis();
-  while (!((fD > offset*2) && (lD < offset) && (rD < offset))) {
+  while (!((fD > offset*2) && (lD < offset) && (rD < offset))) {  //turnaround until there is a opening in the front or 1s passed 
     delay(10);
     fD = readUltrasonic(trigFront, echoFront);
     lD = readUltrasonic(trigLeft, echoLeft);
@@ -289,14 +289,14 @@ void turnAround() {
   T++;
 }
 
-void adjustLeft(int &lSpeed, int &rSpeed) {
+void adjustLeft(int &lSpeed, int &rSpeed) { // increase speed of right wheel
   lSpeed -= 1;
   rSpeed += 1;
   analogWrite(enableLeft, lSpeed);
   analogWrite(enableRight, rSpeed);
 }
 
-void adjustRight(int &lSpeed, int &rSpeed) {
+void adjustRight(int &lSpeed, int &rSpeed) { // increase speed of left wheel
   lSpeed += 1;
   rSpeed -= 1;
   analogWrite(enableLeft, lSpeed);
@@ -304,8 +304,8 @@ void adjustRight(int &lSpeed, int &rSpeed) {
 }
 
 
-// Function to add movement to the path
-void addToPath(int movement) {
+// add movement to the path
+void addToPath(int movement) { 
   if (pathIndex < 200) {
     path[pathIndex++] = movement;
   }
@@ -320,16 +320,16 @@ void addToPath(int movement) {
 // void followPath() {
 //   for (int i = 0; i < pathIndex; i++) {
 //     switch (path[i]) {
-//       case 'F':
+//       case 1:
 //         moveForward();
 //         break;
-//       case 'L':
+//       case 2:
 //         turnLeft();
 //         break;
-//       case 'R':
+//       case 3:
 //         turnRight();
 //         break;
-//       case 'B':
+//       case 4:
 //         turnAround();
 //         break;
 //     }
